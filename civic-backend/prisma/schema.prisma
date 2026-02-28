@@ -1,14 +1,200 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                  String                @id @default(uuid())
+  name                String
+  email               String                @unique
+  phone               String                @unique
+  password            String
+  role                Role                  @default(citizen)
+  language            Language              @default(en)
+  street              String?
+  locality            String?
+  city                String?
+  state               String                @default("Jharkhand")
+  pincode             String?
+  latitude            Float?
+  longitude           Float?
+  profilePicture      String?
+  isVerified          Boolean               @default(false)
+  isActive            Boolean               @default(true)
+  isDeleted           Boolean               @default(false)
+  departmentName      String?
+  assignedArea        String?
+  verificationToken   String?
+  resetPasswordToken  String?
+  resetPasswordExpire DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdById         String?
+  updatedById         String?
+  ChatParticipant     ChatParticipant[]
+  comments            Comment[]
+  headingDepartment   Department?           @relation("DeptHead")
+  mediaUploaded       Media[]
+  Message             Message[]
+  managedReports      Report[]              @relation("Assigner")
+  assignedReports     Report[]              @relation("Assignee")
+  createdReports      Report[]              @relation("Reporter")
+  resolvedReports     Report[]              @relation("Resolver")
+  statusChanges       ReportStatusHistory[]
+  upvotes             Upvote[]
+  createdBy           User?                 @relation("UserCreator", fields: [createdById], references: [id])
+  createdUsers        User[]                @relation("UserCreator")
+  updatedBy           User?                 @relation("UserUpdater", fields: [updatedById], references: [id])
+  updatedUsers        User[]                @relation("UserUpdater")
+}
+
+model Department {
+  id                 String     @id @default(uuid())
+  name               String     @unique
+  code               String     @unique
+  description        String?
+  categories         Category[]
+  headOfDepartmentId String?    @unique
+  contactEmail       String?
+  contactPhone       String?
+  isActive           Boolean    @default(true)
+  isDeleted          Boolean    @default(false)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  headOfDepartment   User?      @relation("DeptHead", fields: [headOfDepartmentId], references: [id])
+}
+
+model Report {
+  id                      String                @id @default(uuid())
+  reporterId              String
+  title                   String
+  description             String
+  category                Category
+  priority                Priority              @default(medium)
+  status                  Status                @default(submitted)
+  address                 String
+  locality                String?
+  ward                    String?
+  city                    String?
+  pincode                 String?
+  latitude                Float
+  longitude               Float
+  assignedToId            String?
+  assignedById            String?
+  assignedAt              DateTime?
+  department              String?
+  resolvedById            String?
+  resolvedAt              DateTime?
+  resolutionNotes         String?
+  rating                  Int?
+  feedbackComment         String?
+  feedbackSubmittedAt     DateTime?
+  estimatedResolutionTime DateTime?
+  actualResolutionTime    Int?
+  isAnonymous             Boolean               @default(false)
+  viewCount               Int                   @default(0)
+  isActive                Boolean               @default(true)
+  isDeleted               Boolean               @default(false)
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  comments                Comment[]
+  media                   Media[]
+  assignedBy              User?                 @relation("Assigner", fields: [assignedById], references: [id])
+  assignedTo              User?                 @relation("Assignee", fields: [assignedToId], references: [id])
+  reporter                User                  @relation("Reporter", fields: [reporterId], references: [id])
+  resolvedBy              User?                 @relation("Resolver", fields: [resolvedById], references: [id])
+  statusHistory           ReportStatusHistory[]
+  upvotes                 Upvote[]
+}
+
+model Media {
+  id            String    @id @default(uuid())
+  reportId      String
+  type          MediaType
+  url           String
+  cloudinaryId  String
+  thumbnailUrl  String?
+  fileName      String
+  fileSize      Int
+  mimeType      String
+  duration      Float?
+  width         Int?
+  height        Int?
+  caption       String?
+  isActive      Boolean   @default(true)
+  isDeleted     Boolean   @default(false)
+  uploadedById  String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  isBeforeMedia Boolean   @default(true)
+  report        Report    @relation(fields: [reportId], references: [id])
+  uploadedBy    User      @relation(fields: [uploadedById], references: [id])
+}
+
+model ReportStatusHistory {
+  id          String   @id @default(uuid())
+  reportId    String
+  status      Status
+  changedById String
+  changedAt   DateTime @default(now())
+  comment     String?
+  changedBy   User     @relation(fields: [changedById], references: [id])
+  report      Report   @relation(fields: [reportId], references: [id])
+}
+
+model Comment {
+  id         String   @id @default(uuid())
+  reportId   String
+  userId     String
+  text       String
+  isInternal Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  report     Report   @relation(fields: [reportId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Upvote {
+  id       String @id @default(uuid())
+  reportId String
+  userId   String
+  report   Report @relation(fields: [reportId], references: [id])
+  user     User   @relation(fields: [userId], references: [id])
+
+  @@unique([reportId, userId])
+}
+
+model Chat {
+  id              String            @id
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  ChatParticipant ChatParticipant[]
+  Message         Message[]
+}
+
+model ChatParticipant {
+  id     String @id
+  chatId String
+  userId String
+  Chat   Chat   @relation(fields: [chatId], references: [id])
+  User   User   @relation(fields: [userId], references: [id])
+
+  @@unique([chatId, userId])
+}
+
+model Message {
+  id        String   @id
+  chatId    String
+  senderId  String
+  content   String
+  isSeen    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  Chat      Chat     @relation(fields: [chatId], references: [id])
+  User      User     @relation(fields: [senderId], references: [id])
 }
 
 enum Role {
@@ -62,208 +248,4 @@ enum MediaType {
   image
   video
   document
-}
-
-model User {
-  id               String   @id @default(uuid())
-  name             String
-  email            String   @unique
-  phone            String   @unique
-  password         String
-  role             Role     @default(citizen)
-  language         Language @default(en)
-  
-  // Address fields
-  street           String?
-  locality         String?
-  city             String?
-  state            String   @default("Jharkhand")
-  pincode          String?
-  latitude         Float?
-  longitude        Float?
-
-  profilePicture   String?
-  isVerified       Boolean  @default(false)
-  isActive         Boolean  @default(true)
-  isDeleted        Boolean  @default(false)
-  
-  departmentName   String?  // Relates to Department name or code
-  assignedArea     String?
-  
-  verificationToken String?
-  resetPasswordToken String?
-  resetPasswordExpire DateTime?
-
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  // Relationships
-  createdReports   Report[] @relation("Reporter")
-  assignedReports  Report[] @relation("Assignee")
-  managedReports   Report[] @relation("Assigner")
-  resolvedReports  Report[] @relation("Resolver")
-  
-  statusChanges    ReportStatusHistory[]
-  comments         Comment[]
-  upvotes          Upvote[]
-  mediaUploaded    Media[]
-
-  // Self-referencing relations for audit
-  createdById      String?
-  createdBy        User?    @relation("UserCreator", fields: [createdById], references: [id])
-  createdUsers     User[]   @relation("UserCreator")
-  
-  updatedById      String?
-  updatedBy        User?    @relation("UserUpdater", fields: [updatedById], references: [id])
-  updatedUsers     User[]   @relation("UserUpdater")
-
-  // Department head
-  headingDepartment Department? @relation("DeptHead")
-}
-
-model Department {
-  id               String   @id @default(uuid())
-  name             String   @unique
-  code             String   @unique
-  description      String?
-  categories       Category[]
-  
-  headOfDepartmentId String? @unique
-  headOfDepartment   User?   @relation("DeptHead", fields: [headOfDepartmentId], references: [id])
-  
-  contactEmail     String?
-  contactPhone     String?
-  
-  isActive         Boolean  @default(true)
-  isDeleted        Boolean  @default(false)
-
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-}
-
-model Report {
-  id               String   @id @default(uuid())
-  reporterId       String
-  reporter         User     @relation("Reporter", fields: [reporterId], references: [id])
-  
-  title            String
-  description      String
-  category         Category
-  priority         Priority @default(medium)
-  status           Status   @default(submitted)
-  
-  // Location
-  address          String
-  locality         String?
-  ward             String?
-  city             String?
-  pincode          String?
-  latitude         Float
-  longitude        Float
-
-  assignedToId     String?
-  assignedTo       User?    @relation("Assignee", fields: [assignedToId], references: [id])
-  
-  assignedById     String?
-  assignedBy       User?    @relation("Assigner", fields: [assignedById], references: [id])
-  
-  assignedAt       DateTime?
-  department       String?
-  
-  // Resolution
-  resolvedById     String?
-  resolvedBy       User?    @relation("Resolver", fields: [resolvedById], references: [id])
-  resolvedAt       DateTime?
-  resolutionNotes  String?
-  
-  // Feedback
-  rating           Int?
-  feedbackComment  String?
-  feedbackSubmittedAt DateTime?
-
-  estimatedResolutionTime DateTime?
-  actualResolutionTime    Int? // In hours
-  
-  isAnonymous      Boolean  @default(false)
-  viewCount        Int      @default(0)
-  
-  isActive         Boolean  @default(true)
-  isDeleted        Boolean  @default(false)
-
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  // Relationships
-  media            Media[]
-  statusHistory    ReportStatusHistory[]
-  comments         Comment[]
-  upvotes          Upvote[]
-}
-
-model Media {
-  id               String   @id @default(uuid())
-  reportId         String
-  report           Report   @relation(fields: [reportId], references: [id])
-  
-  type             MediaType
-  url              String
-  cloudinaryId     String
-  thumbnailUrl     String?
-  fileName         String
-  fileSize         Int
-  mimeType         String
-  duration         Float?
-  width            Int?
-  height           Int?
-  caption          String?
-  
-  isActive         Boolean  @default(true)
-  isDeleted        Boolean  @default(false)
-  
-  uploadedById     String
-  uploadedBy       User     @relation(fields: [uploadedById], references: [id])
-
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  // Used for resolution media differentiation
-  isBeforeMedia    Boolean  @default(true)
-}
-
-model ReportStatusHistory {
-  id               String   @id @default(uuid())
-  reportId         String
-  report           Report   @relation(fields: [reportId], references: [id])
-  
-  status           Status
-  changedById      String
-  changedBy        User     @relation(fields: [changedById], references: [id])
-  
-  changedAt        DateTime @default(now())
-  comment          String?
-}
-
-model Comment {
-  id               String   @id @default(uuid())
-  reportId         String
-  report           Report   @relation(fields: [reportId], references: [id])
-  
-  userId           String
-  user             User     @relation(fields: [userId], references: [id])
-  
-  text             String
-  isInternal       Boolean  @default(false)
-  
-  createdAt        DateTime @default(now())
-}
-
-model Upvote {
-  id               String   @id @default(uuid())
-  reportId         String
-  report           Report   @relation(fields: [reportId], references: [id])
-  
-  userId           String
-  user             User     @relation(fields: [userId], references: [id])
-
-  @@unique([reportId, userId])
 }

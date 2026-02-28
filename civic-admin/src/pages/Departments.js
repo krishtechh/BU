@@ -29,7 +29,7 @@ import {
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
 
 const REPORT_CATEGORIES = [
   { value: 'road_issue', label: 'Road Issue' },
@@ -135,7 +135,7 @@ const Departments = () => {
 
       if (editMode) {
         await axios.put(
-          `${API_BASE_URL}/admin/departments/${currentDepartment._id}`,
+          `${API_BASE_URL}/admin/departments/${currentDepartment.id}`,
           formData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -162,7 +162,7 @@ const Departments = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${API_BASE_URL}/admin/departments/${department._id}`, {
+      await axios.delete(`${API_BASE_URL}/admin/departments/${department.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       await fetchDepartments();
@@ -224,7 +224,7 @@ const Departments = () => {
                 </TableRow>
               ) : (
                 departments.map((dept) => (
-                  <TableRow hover key={dept._id}>
+                  <TableRow hover key={dept.id}>
                     <TableCell>
                       <Typography variant="body1" fontWeight={600}>
                         {dept.name}

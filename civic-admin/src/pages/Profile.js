@@ -196,7 +196,7 @@ const Profile = () => {
               User ID
             </Typography>
             <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
-              {user?._id || 'N/A'}
+              {user?.id || 'N/A'}
             </Typography>
           </Grid>
           <Grid item xs={12} md={6}>

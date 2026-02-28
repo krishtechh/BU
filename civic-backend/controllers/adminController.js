@@ -2,28 +2,67 @@ const prisma = require('../config/db');
 
 exports.getDashboardStats = async (req, res) => {
   try {
-    const totalReports = await prisma.report.count({ where: { isDeleted: false } });
-    const totalUsers = await prisma.user.count({ where: { isDeleted: false } });
-    
-    const statusCounts = await prisma.report.groupBy({
-      by: ['status'],
-      where: { isDeleted: false },
-      _count: { _all: true }
-    });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const resolvedReports = await prisma.report.count({ 
-      where: { status: 'resolved', isDeleted: false } 
-    });
-
-    const resolutionRate = totalReports > 0 ? (resolvedReports / totalReports) * 100 : 0;
+    const [
+      totalReports,
+      todayReports,
+      pendingReports,
+      resolvedReports,
+      totalUsers,
+      activeStaff,
+      recentReports
+    ] = await Promise.all([
+      prisma.report.count({ where: { isDeleted: false } }),
+      prisma.report.count({
+        where: {
+          isDeleted: false,
+          createdAt: { gte: today }
+        }
+      }),
+      prisma.report.count({
+        where: {
+          isDeleted: false,
+          status: { in: ['submitted', 'acknowledged', 'assigned'] }
+        }
+      }),
+      prisma.report.count({
+        where: {
+          isDeleted: false,
+          status: 'resolved'
+        }
+      }),
+      prisma.user.count({ where: { isDeleted: false } }),
+      prisma.user.count({
+        where: {
+          isDeleted: false,
+          role: { in: ['staff', 'supervisor'] }
+        }
+      }),
+      prisma.report.findMany({
+        where: { isDeleted: false },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          reporter: { select: { name: true } },
+          assignedTo: { select: { name: true } }
+        }
+      })
+    ]);
 
     res.status(200).json({
       success: true,
       data: {
-        totalReports,
-        totalUsers,
-        statusCounts: Object.fromEntries(statusCounts.map(s => [s.status, s._count._all])),
-        resolutionRate: parseFloat(resolutionRate.toFixed(2))
+        stats: {
+          totalReports,
+          todayReports,
+          pendingReports,
+          resolvedReports,
+          totalUsers,
+          activeStaff
+        },
+        recentReports
       }
     });
   } catch (error) {

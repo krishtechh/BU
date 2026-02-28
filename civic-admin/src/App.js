@@ -15,6 +15,7 @@ import Staff from './pages/Staff';
 import Departments from './pages/Departments';
 import Analytics from './pages/Analytics';
 import Profile from './pages/Profile';
+import WhatsAppReport from './pages/WhatsAppReport';
 import PrivateRoute from './components/PrivateRoute';
 import CustomCursor from './components/CustomCursor';
 
@@ -29,6 +30,7 @@ const AppContent = () => {
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/whatsapp-report" element={<WhatsAppReport />} />
             <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />

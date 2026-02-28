@@ -35,7 +35,7 @@ const ReportDetailScreen = ({ route, navigation }) => {
         
         // Transform the data to match our UI expectations
         const transformedReport = {
-          id: reportData._id,
+          id: reportData.id,
           title: reportData.title,
           description: reportData.description,
           category: reportData.category,

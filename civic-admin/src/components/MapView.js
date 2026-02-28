@@ -93,7 +93,7 @@ const MapView = ({ reports, onMarkerClick, enableClustering = true }) => {
       const lng = report.location.longitude;
       return (
         <Marker
-          key={report._id}
+          key={report.id}
           position={[lat, lng]}
           icon={createCustomIcon(getMarkerColor(report.status))}
         >
@@ -204,7 +204,7 @@ const MapView = ({ reports, onMarkerClick, enableClustering = true }) => {
 
       return (
         <ClusterMarker
-          key={report._id}
+          key={report.id}
           position={[lat, lng]}
           icon={createCustomIcon(getMarkerColor(report.status))}
           reportStatus={report.status}

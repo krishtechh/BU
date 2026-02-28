@@ -92,7 +92,7 @@ const ManageReportsScreen = ({ navigation }) => {
       // Update local state
       setReports(prevReports =>
         prevReports.map(report =>
-          report._id === reportId ? { ...report, status: newStatus } : report
+          report.id === reportId ? { ...report, status: newStatus } : report
         )
       );
       
@@ -160,7 +160,7 @@ const ManageReportsScreen = ({ navigation }) => {
       [
         ...statusOptions.map(option => ({
           text: option.label,
-          onPress: () => updateReportStatus(report._id, option.value)
+          onPress: () => updateReportStatus(report.id, option.value)
         })),
         { text: 'Cancel', style: 'cancel' }
       ]
@@ -168,14 +168,14 @@ const ManageReportsScreen = ({ navigation }) => {
   };
 
   const renderReport = ({ item }) => {
-    if (!item || !item._id) {
+    if (!item || !item.id) {
       return null; // Skip rendering if item is invalid
     }
 
     const status = REPORT_STATUS[item.status] || { label: 'Unknown', color: '#999' };
     
     return (
-      <Card style={styles.reportCard} key={item._id}>
+      <Card style={styles.reportCard} key={item.id}>
         <Card.Content>
           <View style={styles.reportHeader}>
             <MaterialCommunityIcons
@@ -210,7 +210,7 @@ const ManageReportsScreen = ({ navigation }) => {
             <View style={styles.actionButtons}>
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => navigation.navigate('ReportDetail', { reportId: item._id })}
+                onPress={() => navigation.navigate('ReportDetail', { reportId: item.id })}
               >
                 <MaterialCommunityIcons name="eye" size={16} color="#2196F3" />
                 <Text style={styles.actionText}>View</Text>
@@ -279,7 +279,7 @@ const ManageReportsScreen = ({ navigation }) => {
       <FlatList
         data={filteredReports}
         renderItem={renderReport}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }

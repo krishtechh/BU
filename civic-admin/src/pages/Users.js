@@ -21,7 +21,7 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -224,7 +224,7 @@ const Users = () => {
                 </TableRow>
               ) : (
                 filteredUsers.map((user) => (
-                <TableRow hover key={user._id}>
+                <TableRow hover key={user.id}>
                   <TableCell>
                     <Box display="flex" alignItems="center">
                       <Avatar sx={{ mr: 2, width: 32, height: 32 }}>
@@ -255,7 +255,7 @@ const Users = () => {
                       control={
                         <Switch
                           checked={user.isActive}
-                          onChange={() => handleStatusToggle(user._id, user.isActive)}
+                          onChange={() => handleStatusToggle(user.id, user.isActive)}
                           size="small"
                         />
                       }

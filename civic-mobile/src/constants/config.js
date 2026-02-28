@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'https://civic-setu-backend.onrender.com/api';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://civic-setu-backend.onrender.com/api';
 
 export const CATEGORIES = {
   road_issue: 'Road Issue',

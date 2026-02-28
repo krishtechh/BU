@@ -33,7 +33,7 @@ import axios from 'axios';
 import { getStatusColor, getStatusLabel } from '../constants/reportStatus';
 import MapView from '../components/MapView';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
 
 const Reports = () => {
   const [reports, setReports] = useState([]);
@@ -164,7 +164,7 @@ const Reports = () => {
 
   const handleStatusUpdate = async () => {
     try {
-      await axios.patch(`${API_BASE_URL}/reports/${selectedReport._id}/status`, {
+      await axios.patch(`${API_BASE_URL}/reports/${selectedReport.id}/status`, {
         status: statusUpdate,
         comment
       });
@@ -197,7 +197,7 @@ const Reports = () => {
 
     try {
       setDeleting(true);
-      await axios.delete(`${API_BASE_URL}/reports/${reportToDelete._id}`);
+      await axios.delete(`${API_BASE_URL}/reports/${reportToDelete.id}`);
       setOpenDeleteDialog(false);
       setReportToDelete(null);
       setRefetch(prev => prev + 1);
@@ -253,7 +253,7 @@ const Reports = () => {
 
     try {
       setAssigning(true);
-      await axios.patch(`${API_BASE_URL}/reports/${reportToAssign._id}/assign`, {
+      await axios.patch(`${API_BASE_URL}/reports/${reportToAssign.id}/assign`, {
         assignedTo: selectedStaff,
         department: selectedDepartment,
         status: 'assigned'
@@ -435,7 +435,7 @@ const Reports = () => {
                 </TableRow>
               ) : (
                 filteredReports.map((report) => (
-                  <TableRow hover key={report._id}>
+                  <TableRow hover key={report.id}>
                     <TableCell>{report.title}</TableCell>
                     <TableCell>{report.reporterId?.name || 'Anonymous'}</TableCell>
                     <TableCell>{report.category}</TableCell>
@@ -794,7 +794,7 @@ const Reports = () => {
                 disabled={!selectedDepartment || staffMembers.length === 0}
               >
                 {staffMembers.map((staff) => (
-                  <MenuItem key={staff._id} value={staff._id}>
+                  <MenuItem key={staff.id} value={staff.id}>
                     {staff.name} ({staff.role})
                   </MenuItem>
                 ))}

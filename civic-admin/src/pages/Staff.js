@@ -28,7 +28,7 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
 
 const Staff = () => {
   const [staff, setStaff] = useState([]);
@@ -346,7 +346,7 @@ const Staff = () => {
                 </TableRow>
               ) : (
                 filteredStaff.map((user) => (
-                <TableRow hover key={user._id}>
+                <TableRow hover key={user.id}>
                   <TableCell>
                     <Box display="flex" alignItems="center">
                       <Avatar sx={{ mr: 2, width: 32, height: 32 }}>
@@ -377,7 +377,7 @@ const Staff = () => {
                       control={
                         <Switch
                           checked={user.isActive}
-                          onChange={() => handleStatusToggle(user._id, user.isActive)}
+                          onChange={() => handleStatusToggle(user.id, user.isActive)}
                           size="small"
                         />
                       }
@@ -453,7 +453,7 @@ const Staff = () => {
               label="Department *"
             >
               {departments.map((dept) => (
-                <MenuItem key={dept._id} value={dept.code}>
+                <MenuItem key={dept.id} value={dept.code}>
                   {dept.name} ({dept.code})
                 </MenuItem>
               ))}

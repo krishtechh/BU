@@ -237,7 +237,7 @@ const HomeScreen = ({ navigation }) => {
       delay={index * 50}
       animation="fadeInUp"
       style={styles.reportCard}
-      onPress={() => navigation.navigate('ReportDetail', { reportId: item._id })}
+      onPress={() => navigation.navigate('ReportDetail', { reportId: item.id })}
     >
       <View style={styles.reportHeader}>
         <View style={styles.reportTitleContainer}>
@@ -479,7 +479,7 @@ const HomeScreen = ({ navigation }) => {
               <FlatList
                 data={filteredReports.slice(0, 15)}
                 renderItem={renderReportCard}
-                keyExtractor={(item) => item._id}
+                keyExtractor={(item) => item.id}
                 scrollEnabled={false}
                 showsVerticalScrollIndicator={false}
               />

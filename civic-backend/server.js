@@ -12,7 +12,9 @@ dotenv.config();
 
 const app = express();
 
+// -------------------- MIDDLEWARE --------------------
 app.use(helmet());
+
 app.use(cors({
   origin: [
     process.env.CLIENT_URL,
@@ -23,15 +25,17 @@ app.use(cors({
     'http://localhost:8081',
     'http://localhost:8082',
     'http://localhost:8086',
+    'http://10.55.0.177:8081',
+    'http://10.55.0.177:4000',
     'http://192.168.1.11:3001',
     'http://192.168.1.11:5000'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  preflightContinue: false,
   optionsSuccessStatus: 200
 }));
+
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 app.use(morgan('dev'));
@@ -41,29 +45,37 @@ const limiter = rateLimit({
   max: 1000,
   message: 'Too many requests from this IP, please try again later.'
 });
+
 app.use('/api/', limiter);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Routes - Note: These currently use Mongoose controllers and will need updating
+// -------------------- ROUTES --------------------
 const authRoutes = require('./routes/auth');
 const reportRoutes = require('./routes/reports');
 const userRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
 
+// 👇 WhatsApp Route
+const whatsappRoutes = require('./whatsapp/whatsapp.routes');
+
+// Register routes
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/whatsapp', whatsappRoutes); // WhatsApp
 
+// -------------------- HEALTH CHECK --------------------
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     message: 'Civic Setu API is running on Supabase',
     timestamp: new Date().toISOString()
   });
 });
 
+// -------------------- ERROR HANDLING --------------------
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({
@@ -80,14 +92,14 @@ app.use((req, res) => {
   });
 });
 
+// -------------------- SERVER START --------------------
 const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
-    // Test database connection
     await prisma.$connect();
     console.log('Successfully connected to Supabase/PostgreSQL via Prisma');
-    
+
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
       console.log(`Server accessible at http://localhost:${PORT}`);

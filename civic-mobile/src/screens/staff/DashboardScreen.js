@@ -148,9 +148,9 @@ const DashboardScreen = ({ navigation }) => {
           ) : (
             dashboardData.recentReports.map((report) => (
               <TouchableOpacity
-                key={report._id}
+                key={report.id}
                 style={styles.reportItem}
-                onPress={() => navigation.navigate('ReportDetail', { reportId: report._id })}
+                onPress={() => navigation.navigate('ReportDetail', { reportId: report.id })}
               >
                 <View style={styles.reportContent}>
                   <Text style={styles.reportTitle} numberOfLines={1}>

@@ -21,7 +21,7 @@ router.get('/nearby', optionalAuth, reportController.getNearbyReports);
 router.get('/stats', reportController.getReportStats);
 router.get('/:id', optionalAuth, reportController.getReportById);
 
-router.post('/', protect, upload.array('media', 5), validateReport, reportController.createReport);
+router.post('/', optionalAuth, upload.array('media', 5), validateReport, reportController.createReport);
 router.put('/:id', protect, demoProtection, reportController.updateReport);
 router.delete('/:id', protect, authorize('admin'), demoProtection, reportController.deleteReport);
 

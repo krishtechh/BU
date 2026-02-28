@@ -39,7 +39,7 @@ const MyReportsScreen = ({ navigation }) => {
 
       if (result.success) {
         const transformedReports = result.data.map(report => ({
-          id: report._id,
+          id: report.id,
           title: report.title,
           category: report.category,
           status: report.status,

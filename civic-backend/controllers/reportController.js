@@ -12,7 +12,7 @@ exports.createReport = async (req, res) => {
       });
     }
 
-    const {
+    let {
       title,
       description,
       category,
@@ -21,21 +21,74 @@ exports.createReport = async (req, res) => {
       isAnonymous
     } = req.body;
 
+    // Handle location structure from different FormData formats
+    if (!location && req.body['location[address]']) {
+      location = {
+        address: req.body['location[address]'],
+        latitude: req.body['location[latitude]'],
+        longitude: req.body['location[longitude]'],
+        locality: req.body['location[locality]'],
+        ward: req.body['location[ward]'],
+        city: req.body['location[city]'],
+        pincode: req.body['location[pincode]']
+      };
+    } else if (typeof location === 'string') {
+      try {
+        location = JSON.parse(location);
+      } catch (e) {
+        console.warn('Failed to parse location string');
+      }
+    }
+
+    if (!location || !location.address) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid location address is required'
+      });
+    }
+
+    let reporterId;
+    if (req.user && req.user.id) {
+      reporterId = req.user.id;
+    } else {
+      // Handle WhatsApp/Public Guest reports
+      const whatsappUser = await prisma.user.findFirst({
+        where: { email: 'whatsapp-bot@civicsetu.com' }
+      });
+
+      if (!whatsappUser) {
+        // Create a default bot user if it doesn't exist
+        const newUser = await prisma.user.create({
+          data: {
+            name: 'WhatsApp Bot',
+            email: 'whatsapp-bot@civicsetu.com',
+            phone: '0000000000',
+            password: 'guest_password_not_used', // Placeholder
+            role: 'citizen',
+            isActive: true
+          }
+        });
+        reporterId = newUser.id;
+      } else {
+        reporterId = whatsappUser.id;
+      }
+    }
+
     const report = await prisma.report.create({
       data: {
-        reporterId: req.user.id,
+        reporterId,
         title,
         description,
         category,
         address: location.address,
-        locality: location.locality,
-        ward: location.ward,
-        city: location.city,
-        pincode: location.pincode,
-        latitude: parseFloat(location.latitude),
-        longitude: parseFloat(location.longitude),
+        locality: location.locality || null,
+        ward: location.ward || null,
+        city: location.city || null,
+        pincode: location.pincode || null,
+        latitude: location.latitude ? parseFloat(location.latitude) : 0,
+        longitude: location.longitude ? parseFloat(location.longitude) : 0,
         priority: priority || 'medium',
-        isAnonymous: isAnonymous || false,
+        isAnonymous: isAnonymous === 'true' || isAnonymous === true,
         statusHistory: {
           create: {
             status: 'submitted',
@@ -53,27 +106,42 @@ exports.createReport = async (req, res) => {
     });
 
     if (req.files && req.files.length > 0) {
-      const mediaPromises = req.files.map(async (file) => {
-        const result = await cloudinary.uploader.upload(file.path, {
-          folder: 'civic-reports',
-          resource_type: 'auto'
-        });
+      // Check if Cloudinary is configured
+      const isCloudinaryConfigured =
+        process.env.CLOUDINARY_CLOUD_NAME &&
+        process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_name';
 
-        return prisma.media.create({
-          data: {
-            reportId: report.id,
-            type: file.mimetype.startsWith('image') ? 'image' : 'video',
-            url: result.secure_url,
-            cloudinaryId: result.public_id,
-            fileName: file.originalname,
-            fileSize: file.size,
-            mimeType: file.mimetype,
-            uploadedById: req.user.id
+      if (!isCloudinaryConfigured) {
+        console.warn('⚠️ Cloudinary NOT configured correctly. Skipping file upload but report was created.');
+      } else {
+        const mediaPromises = req.files.map(async (file) => {
+          try {
+            const result = await cloudinary.uploader.upload(file.path, {
+              folder: 'civic-reports',
+              resource_type: 'auto'
+            });
+
+            return prisma.media.create({
+              data: {
+                reportId: report.id,
+                type: file.mimetype.startsWith('image') ? 'image' : 'video',
+                url: result.secure_url,
+                cloudinaryId: result.public_id,
+                fileName: file.originalname,
+                fileSize: file.size,
+                mimeType: file.mimetype,
+                uploadedById: req.user.id
+              }
+            });
+          } catch (uploadError) {
+            console.error('Individual file upload failed:', uploadError);
+            // Don't throw, just log so other files can proceed and report is still created
+            return null;
           }
         });
-      });
 
-      await Promise.all(mediaPromises);
+        await Promise.all(mediaPromises);
+      }
     }
 
     const finalReport = await prisma.report.findUnique({
@@ -92,11 +160,21 @@ exports.createReport = async (req, res) => {
       data: finalReport
     });
   } catch (error) {
-    console.error('Create report error:', error);
+    console.error('Create report error details:', {
+      message: error.message || 'No specific message',
+      name: error.name,
+      code: error.code,
+      stack: error.stack,
+      raw: error // This will show more details in many consoles
+    });
+
+    // Log the full error object as a string too, just in case
+    console.error('Full Error String:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+
     res.status(500).json({
       success: false,
-      message: 'Error creating report',
-      error: error.message
+      message: `Error creating report: ${error.message || 'Unknown server error'}`,
+      error: error.message || error
     });
   }
 };
@@ -173,8 +251,17 @@ exports.getAllReports = async (req, res) => {
 
 exports.getReportById = async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!id || id === 'undefined') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid report ID'
+      });
+    }
+
     const report = await prisma.report.update({
-      where: { id: req.params.id },
+      where: { id },
       data: { viewCount: { increment: 1 } },
       include: {
         reporter: {
@@ -272,8 +359,17 @@ exports.getMyReports = async (req, res) => {
 
 exports.updateReport = async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!id || id === 'undefined') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid report ID'
+      });
+    }
+
     const report = await prisma.report.findUnique({
-      where: { id: req.params.id }
+      where: { id }
     });
 
     if (!report) {
@@ -283,8 +379,8 @@ exports.updateReport = async (req, res) => {
       });
     }
 
-    if (report.reporterId !== req.user.id && 
-        !['admin', 'supervisor'].includes(req.user.role)) {
+    if (report.reporterId !== req.user.id &&
+      !['admin', 'supervisor'].includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this report'
@@ -305,7 +401,7 @@ exports.updateReport = async (req, res) => {
     if (description) updateData.description = description;
     if (category) updateData.category = category;
     if (priority) updateData.priority = priority;
-    
+
     if (location) {
       if (location.address) updateData.address = location.address;
       if (location.locality) updateData.locality = location.locality;
@@ -344,8 +440,17 @@ exports.updateReport = async (req, res) => {
 
 exports.deleteReport = async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!id || id === 'undefined') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid report ID'
+      });
+    }
+
     const report = await prisma.report.findUnique({
-      where: { id: req.params.id },
+      where: { id },
       include: { media: true }
     });
 
@@ -380,7 +485,7 @@ exports.deleteReport = async (req, res) => {
     await prisma.reportStatusHistory.deleteMany({ where: { reportId: req.params.id } });
     await prisma.comment.deleteMany({ where: { reportId: req.params.id } });
     await prisma.upvote.deleteMany({ where: { reportId: req.params.id } });
-    
+
     await prisma.report.delete({ where: { id: req.params.id } });
 
     res.status(200).json({
@@ -399,7 +504,15 @@ exports.deleteReport = async (req, res) => {
 
 exports.updateReportStatus = async (req, res) => {
   try {
+    const { id } = req.params;
     const { status, comment } = req.body;
+
+    if (!id || id === 'undefined') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid report ID'
+      });
+    }
 
     if (!status) {
       return res.status(400).json({
@@ -409,7 +522,7 @@ exports.updateReportStatus = async (req, res) => {
     }
 
     const report = await prisma.report.findUnique({
-      where: { id: req.params.id }
+      where: { id }
     });
 
     if (!report) {
@@ -435,7 +548,7 @@ exports.updateReportStatus = async (req, res) => {
       updateData.resolvedById = req.user.id;
       updateData.resolvedAt = new Date();
       updateData.resolutionNotes = comment;
-      
+
       const startTime = new Date(report.createdAt);
       const endTime = new Date();
       updateData.actualResolutionTime = Math.floor((endTime - startTime) / (1000 * 60 * 60));
@@ -471,10 +584,18 @@ exports.updateReportStatus = async (req, res) => {
 
 exports.assignReport = async (req, res) => {
   try {
+    const { id } = req.params;
     const { staffId, department } = req.body;
 
+    if (!id || id === 'undefined') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid report ID'
+      });
+    }
+
     const report = await prisma.report.findUnique({
-      where: { id: req.params.id }
+      where: { id }
     });
 
     if (!report) {
@@ -734,7 +855,7 @@ exports.getReportStats = async (req, res) => {
     }
 
     const total = await prisma.report.count({ where });
-    
+
     const byStatus = await prisma.report.groupBy({
       by: ['status'],
       where,

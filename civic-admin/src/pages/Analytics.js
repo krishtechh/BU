@@ -52,7 +52,7 @@ import {
 import axios from 'axios';
 import AnimatedCard from '../components/AnimatedCard';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
 
 const Analytics = () => {
   const [reportAnalytics, setReportAnalytics] = useState({ timeline: [], categories: [] });
@@ -76,25 +76,40 @@ const Analytics = () => {
 
     return () => clearInterval(interval);
   }, [autoRefresh, timeRange]);
+const fetchAnalytics = async () => {
+  try {
+    const params = timeRange === 'all' ? {} : { timeRange };
 
-  const fetchAnalytics = async () => {
-    try {
-      // Don't send timeRange parameter when 'all' is selected to get all data
-      const params = timeRange === 'all' ? {} : { timeRange };
-      const [reportsResponse, usersResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/admin/reports/analytics`, { params }),
-        axios.get(`${API_BASE_URL}/admin/users/analytics`, { params })
-      ]);
+    const [reportsResponse, usersResponse] = await Promise.all([
+      axios.get(`${API_BASE_URL}/admin/reports/analytics`, { params }),
+      axios.get(`${API_BASE_URL}/admin/users/analytics`, { params })
+    ]);
 
-      setReportAnalytics(reportsResponse.data.data);
-      setUserAnalytics(usersResponse.data.data);
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const reportsData = reportsResponse.data?.data || reportsResponse.data || {};
+    const usersData = usersResponse.data?.data || usersResponse.data || {};
+
+    setReportAnalytics({
+      timeline: Array.isArray(reportsData.timeline) ? reportsData.timeline : [],
+      categories: Array.isArray(reportsData.categories) ? reportsData.categories : []
+    });
+
+    setUserAnalytics({
+      userStats: Array.isArray(usersData.userStats) ? usersData.userStats : [],
+      registrationTrend: Array.isArray(usersData.registrationTrend) ? usersData.registrationTrend : [],
+      topReporters: Array.isArray(usersData.topReporters) ? usersData.topReporters : []
+    });
+
+    setLastUpdated(new Date());
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+
+    // Hard fallback
+    setReportAnalytics({ timeline: [], categories: [] });
+    setUserAnalytics({ userStats: [], registrationTrend: [], topReporters: [] });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const summaryStats = useMemo(() => {
     const totalReports = reportAnalytics.timeline?.reduce((acc, item) => acc + (item.total || 0), 0) || 0;
@@ -105,7 +120,7 @@ const Analytics = () => {
     }, 0) || 0;
 
     const resolutionRate = totalReports > 0 ? ((totalResolved / totalReports) * 100).toFixed(1) : 0;
-    const mostActiveCategory = reportAnalytics.categories?.[0]?._id || 'N/A';
+    const mostActiveCategory = reportAnalytics.categories?.[0]?.id || 'N/A';
     const totalUsers = userAnalytics.userStats?.reduce((acc, stat) => acc + stat.count, 0) || 0;
 
     return {
@@ -347,7 +362,7 @@ const Analytics = () => {
                           }}
                         />
                         <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
-                          {cat._id}
+                          {cat.id}
                         </Typography>
                       </Box>
                       <Typography variant="body2" fontWeight={600}>
@@ -421,10 +436,10 @@ const Analytics = () => {
                       staff: '#3b82f6',
                       citizen: '#10b981'
                     };
-                    const color = roleColors[stat._id] || '#6366f1';
+                    const color = roleColors[stat.id] || '#6366f1';
 
                     return (
-                      <Box key={stat._id} sx={{ mb: 3 }}>
+                      <Box key={stat.id} sx={{ mb: 3 }}>
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                           <Box display="flex" alignItems="center" gap={1}>
                             <Avatar
@@ -435,10 +450,10 @@ const Analytics = () => {
                                 fontSize: '0.75rem'
                               }}
                             >
-                              {stat._id.charAt(0).toUpperCase()}
+                              {stat.id.charAt(0).toUpperCase()}
                             </Avatar>
                             <Typography variant="body2" fontWeight={600}>
-                              {stat._id.toUpperCase()}
+                              {stat.id.toUpperCase()}
                             </Typography>
                           </Box>
                           <Typography variant="h6" color={color} fontWeight={700}>
