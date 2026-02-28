@@ -76,52 +76,56 @@ const Analytics = () => {
 
     return () => clearInterval(interval);
   }, [autoRefresh, timeRange]);
-const fetchAnalytics = async () => {
-  try {
-    const params = timeRange === 'all' ? {} : { timeRange };
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+      const params = timeRange === 'all' ? {} : { timeRange };
 
-    const [reportsResponse, usersResponse] = await Promise.all([
-      axios.get(`${API_BASE_URL}/admin/reports/analytics`, { params }),
-      axios.get(`${API_BASE_URL}/admin/users/analytics`, { params })
-    ]);
+      const [reportsResponse, usersResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/admin/reports/analytics`, { params }),
+        axios.get(`${API_BASE_URL}/admin/users/analytics`, { params })
+      ]);
 
-    const reportsData = reportsResponse.data?.data || reportsResponse.data || {};
-    const usersData = usersResponse.data?.data || usersResponse.data || {};
+      const reportsData = reportsResponse.data?.data || reportsResponse.data || {};
+      const usersData = usersResponse.data?.data || usersResponse.data || {};
 
-    setReportAnalytics({
-      timeline: Array.isArray(reportsData.timeline) ? reportsData.timeline : [],
-      categories: Array.isArray(reportsData.categories) ? reportsData.categories : []
-    });
+      setReportAnalytics({
+        timeline: Array.isArray(reportsData.timeline) ? reportsData.timeline : [],
+        categories: Array.isArray(reportsData.categories) ? reportsData.categories : []
+      });
 
-    setUserAnalytics({
-      userStats: Array.isArray(usersData.userStats) ? usersData.userStats : [],
-      registrationTrend: Array.isArray(usersData.registrationTrend) ? usersData.registrationTrend : [],
-      topReporters: Array.isArray(usersData.topReporters) ? usersData.topReporters : []
-    });
+      setUserAnalytics({
+        userStats: Array.isArray(usersData.userStats) ? usersData.userStats : [],
+        registrationTrend: Array.isArray(usersData.registrationTrend) ? usersData.registrationTrend : [],
+        topReporters: Array.isArray(usersData.topReporters) ? usersData.topReporters : []
+      });
 
-    setLastUpdated(new Date());
-  } catch (error) {
-    console.error('Error fetching analytics:', error);
-
-    // Hard fallback
-    setReportAnalytics({ timeline: [], categories: [] });
-    setUserAnalytics({ userStats: [], registrationTrend: [], topReporters: [] });
-  } finally {
-    setLoading(false);
-  }
-};
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      // Hard fallback
+      setReportAnalytics({ timeline: [], categories: [] });
+      setUserAnalytics({ userStats: [], registrationTrend: [], topReporters: [] });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const summaryStats = useMemo(() => {
-    const totalReports = reportAnalytics.timeline?.reduce((acc, item) => acc + (item.total || 0), 0) || 0;
+    const timeline = reportAnalytics?.timeline || [];
+    const categories = reportAnalytics?.categories || [];
+    const userStats = userAnalytics?.userStats || [];
 
-    const totalResolved = reportAnalytics.timeline?.reduce((acc, item) => {
+    const totalReports = timeline.reduce((acc, item) => acc + (item.total || 0), 0) || 0;
+
+    const totalResolved = timeline.reduce((acc, item) => {
       const resolvedStatus = item.statusCounts?.find(s => s.status === 'resolved');
       return acc + (resolvedStatus?.count || 0);
     }, 0) || 0;
 
     const resolutionRate = totalReports > 0 ? ((totalResolved / totalReports) * 100).toFixed(1) : 0;
-    const mostActiveCategory = reportAnalytics.categories?.[0]?.id || 'N/A';
-    const totalUsers = userAnalytics.userStats?.reduce((acc, stat) => acc + stat.count, 0) || 0;
+    const mostActiveCategory = categories[0]?._id || reportAnalytics.categories?.[0]?.id || 'N/A';
+    const totalUsers = userStats.reduce((acc, stat) => acc + (stat.count || 0), 0) || userAnalytics.userStats?.reduce((acc, stat) => acc + (stat.count || 0), 0) || 0;
 
     return {
       totalReports,
@@ -289,11 +293,11 @@ const fetchAnalytics = async () => {
                   <Chip label="Trend Analysis" size="small" color="primary" variant="outlined" />
                 </Box>
                 <ResponsiveContainer width="100%" height={350}>
-                  <AreaChart data={reportAnalytics.timeline}>
+                  <AreaChart data={reportAnalytics?.timeline || []}>
                     <defs>
                       <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -331,7 +335,7 @@ const fetchAnalytics = async () => {
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
-                      data={reportAnalytics.categories}
+                      data={reportAnalytics?.categories || []}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
@@ -342,7 +346,7 @@ const fetchAnalytics = async () => {
                       nameKey="_id"
                       animationDuration={1500}
                     >
-                      {reportAnalytics.categories.map((entry, index) => (
+                      {(reportAnalytics?.categories || []).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                       ))}
                     </Pie>
@@ -350,7 +354,7 @@ const fetchAnalytics = async () => {
                   </PieChart>
                 </ResponsiveContainer>
                 <Box sx={{ mt: 2 }}>
-                  {reportAnalytics.categories.slice(0, 5).map((cat, idx) => (
+                  {(reportAnalytics?.categories || []).slice(0, 5).map((cat, idx) => (
                     <Box key={idx} display="flex" alignItems="center" justifyContent="space-between" mb={1}>
                       <Box display="flex" alignItems="center" gap={1}>
                         <Box
@@ -362,7 +366,7 @@ const fetchAnalytics = async () => {
                           }}
                         />
                         <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
-                          {cat.id}
+                          {cat.id || cat._id || 'Unknown'}
                         </Typography>
                       </Box>
                       <Typography variant="body2" fontWeight={600}>
@@ -390,11 +394,11 @@ const fetchAnalytics = async () => {
                   />
                 </Box>
                 <ResponsiveContainer width="100%" height={320}>
-                  <BarChart data={userAnalytics.registrationTrend.slice().reverse()}>
+                  <BarChart data={(userAnalytics?.registrationTrend || []).slice().reverse()}>
                     <defs>
                       <linearGradient id="colorBar" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
-                        <stop offset="100%" stopColor="#10b981" stopOpacity={0.6}/>
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity={0.6} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -427,9 +431,9 @@ const fetchAnalytics = async () => {
                   User Role Distribution
                 </Typography>
                 <Box>
-                  {userAnalytics.userStats.map((stat, index) => {
-                    const total = userAnalytics.userStats.reduce((acc, s) => acc + s.count, 0);
-                    const percentage = ((stat.count / total) * 100).toFixed(1);
+                  {(userAnalytics?.userStats || []).map((stat, index) => {
+                    const total = (userAnalytics?.userStats || []).reduce((acc, s) => acc + (s.count || 0), 0);
+                    const percentage = total > 0 ? ((stat.count / total) * 100).toFixed(1) : 0;
                     const roleColors = {
                       admin: '#ef4444',
                       supervisor: '#f59e0b',
@@ -450,10 +454,10 @@ const fetchAnalytics = async () => {
                                 fontSize: '0.75rem'
                               }}
                             >
-                              {stat.id.charAt(0).toUpperCase()}
+                              {(stat.id || stat.role || '?').charAt(0).toUpperCase()}
                             </Avatar>
                             <Typography variant="body2" fontWeight={600}>
-                              {stat.id.toUpperCase()}
+                              {(stat.id || stat.role || 'Unknown').toUpperCase()}
                             </Typography>
                           </Box>
                           <Typography variant="h6" color={color} fontWeight={700}>
@@ -524,7 +528,7 @@ const fetchAnalytics = async () => {
                                   fontWeight: 700
                                 }}
                               >
-                                {reporter.name?.charAt(0).toUpperCase()}
+                                {reporter.name?.charAt(0).toUpperCase() || '?'}
                               </Avatar>
                               {index < 3 && (
                                 <Box

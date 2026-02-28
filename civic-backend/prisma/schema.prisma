@@ -36,11 +36,11 @@ model User {
   updatedAt           DateTime              @updatedAt
   createdById         String?
   updatedById         String?
-  ChatParticipant     ChatParticipant[]
+  chatParticipants    ChatParticipant[]
   comments            Comment[]
   headingDepartment   Department?           @relation("DeptHead")
   mediaUploaded       Media[]
-  Message             Message[]
+  sentMessages        Message[]
   managedReports      Report[]              @relation("Assigner")
   assignedReports     Report[]              @relation("Assignee")
   createdReports      Report[]              @relation("Reporter")
@@ -169,32 +169,32 @@ model Upvote {
 }
 
 model Chat {
-  id              String            @id
+  id              String            @id @default(uuid())
   createdAt       DateTime          @default(now())
-  updatedAt       DateTime
-  ChatParticipant ChatParticipant[]
-  Message         Message[]
+  updatedAt       DateTime          @updatedAt
+  participants    ChatParticipant[]
+  messages        Message[]
 }
 
 model ChatParticipant {
-  id     String @id
+  id     String @id @default(uuid())
   chatId String
   userId String
-  Chat   Chat   @relation(fields: [chatId], references: [id])
-  User   User   @relation(fields: [userId], references: [id])
+  chat   Chat   @relation(fields: [chatId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   @@unique([chatId, userId])
 }
 
 model Message {
-  id        String   @id
+  id        String   @id @default(uuid())
   chatId    String
   senderId  String
   content   String
   isSeen    Boolean  @default(false)
   createdAt DateTime @default(now())
-  Chat      Chat     @relation(fields: [chatId], references: [id])
-  User      User     @relation(fields: [senderId], references: [id])
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  sender    User     @relation(fields: [senderId], references: [id])
 }
 
 enum Role {
@@ -225,6 +225,57 @@ enum Category {
   pollution
   encroachment
   other
+  // Granular categories from DB
+  road_pothole_filling
+  road_resurfacing
+  road_divider_repair
+  road_footpath_repair
+  road_speed_breaker
+  water_pipe_leak
+  water_supply_restoration
+  water_valve_replacement
+  water_meter_issues
+  water_borewell
+  drain_blockage
+  drain_stormwater
+  drain_manhole
+  drain_sewage_overflow
+  drain_pipe_repair
+  san_public_toilet
+  san_open_defecation
+  san_sewage_treatment
+  san_solid_waste
+  san_street_sweeping
+  san_dead_animal
+  san_hospital_waste
+  san_drain_cleaning
+  san_graffiti
+  san_toilet_block
+  elec_power_outage
+  elec_transformer
+  elec_broken_wires
+  elec_meter
+  elec_illegal
+  light_bulb_replacement
+  light_wiring_fault
+  light_pole_damage
+  light_timer_fault
+  light_solar
+  garbage_household
+  garbage_bulk
+  garbage_construction
+  garbage_hazardous
+  garbage_green
+  util_gas_pipeline
+  util_broadband
+  util_cable_tv
+  util_telephone_pole
+  util_public_wifi
+  util_gas_meter
+  util_water_network
+  util_optical_fiber
+  util_junction_box
+  util_underground
 }
 
 enum Priority {
@@ -249,3 +300,4 @@ enum MediaType {
   video
   document
 }
+

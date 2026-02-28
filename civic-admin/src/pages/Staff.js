@@ -78,8 +78,10 @@ const Staff = () => {
           })
         ]);
 
-        const usersData = staffResponse.data.data || [];
-        const staffData = usersData.filter(user => user.role !== 'citizen');
+        console.log('Staff Fetch Responses:', { staff: staffResponse.data, departments: deptResponse.data });
+
+        const usersData = staffResponse.data?.data || staffResponse.data || [];
+        const staffData = Array.isArray(usersData) ? usersData.filter(user => user.role !== 'citizen') : [];
         setStaff(staffData);
 
         const departmentsData = deptResponse.data.data || [];
@@ -346,48 +348,48 @@ const Staff = () => {
                 </TableRow>
               ) : (
                 filteredStaff.map((user) => (
-                <TableRow hover key={user.id}>
-                  <TableCell>
-                    <Box display="flex" alignItems="center">
-                      <Avatar sx={{ mr: 2, width: 32, height: 32 }}>
-                        {user.name.charAt(0).toUpperCase()}
-                      </Avatar>
-                      {user.name}
-                    </Box>
-                  </TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.phone}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={user.role}
-                      color={getRoleColor(user.role)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>{user.department || '-'}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={user.isVerified ? 'Verified' : 'Unverified'}
-                      color={user.isVerified ? 'success' : 'warning'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={user.isActive}
-                          onChange={() => handleStatusToggle(user.id, user.isActive)}
-                          size="small"
-                        />
-                      }
-                      label={user.isActive ? 'Active' : 'Inactive'}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </TableCell>
-                </TableRow>
+                  <TableRow hover key={user.id}>
+                    <TableCell>
+                      <Box display="flex" alignItems="center">
+                        <Avatar sx={{ mr: 2, width: 32, height: 32 }}>
+                          {user.name?.charAt(0).toUpperCase() || '?'}
+                        </Avatar>
+                        {user.name}
+                      </Box>
+                    </TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.phone}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={user.role}
+                        color={getRoleColor(user.role)}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>{user.department || '-'}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={user.isVerified ? 'Verified' : 'Unverified'}
+                        color={user.isVerified ? 'success' : 'warning'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={user.isActive}
+                            onChange={() => handleStatusToggle(user.id, user.isActive)}
+                            size="small"
+                          />
+                        }
+                        label={user.isActive ? 'Active' : 'Inactive'}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
             </TableBody>

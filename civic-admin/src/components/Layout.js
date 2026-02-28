@@ -31,7 +31,9 @@ import {
   Person,
   Brightness4,
   Brightness7,
-  Business
+  Business,
+  Chat,
+  Engineering
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemeMode } from '../contexts/ThemeContext';
@@ -69,6 +71,8 @@ const Layout = () => {
     { text: 'Citizens', icon: <People />, path: '/users' },
     { text: 'Staff', icon: <Group />, path: '/staff' },
     { text: 'Departments', icon: <Business />, path: '/departments' },
+    { text: 'Contractors', icon: <Engineering />, path: '/contractors' },
+    { text: 'Messages', icon: <Chat />, path: '/messages' },
     { text: 'Analytics', icon: <Analytics />, path: '/analytics' },
   ];
 

@@ -32,17 +32,68 @@ import axios from 'axios';
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
 
 const REPORT_CATEGORIES = [
-  { value: 'road_issue', label: 'Road Issue' },
-  { value: 'water_supply', label: 'Water Supply' },
-  { value: 'electricity', label: 'Electricity' },
-  { value: 'garbage', label: 'Garbage' },
-  { value: 'drainage', label: 'Drainage' },
-  { value: 'street_light', label: 'Street Light' },
-  { value: 'traffic', label: 'Traffic' },
-  { value: 'pollution', label: 'Pollution' },
-  { value: 'encroachment', label: 'Encroachment' },
-  { value: 'other', label: 'Other' }
+  // Potholes & Roads
+  { value: 'road_pothole_filling', label: 'Pothole Filling', group: 'Potholes & Roads', color: '#ef4444' },
+  { value: 'road_resurfacing', label: 'Road Resurfacing', group: 'Potholes & Roads', color: '#ef4444' },
+  { value: 'road_divider_repair', label: 'Divider Repair', group: 'Potholes & Roads', color: '#ef4444' },
+  { value: 'road_footpath_repair', label: 'Footpath Repair', group: 'Potholes & Roads', color: '#ef4444' },
+  { value: 'road_speed_breaker', label: 'Speed Breaker', group: 'Potholes & Roads', color: '#ef4444' },
+  // Garbage & Waste
+  { value: 'garbage_household', label: 'Household Waste Pickup', group: 'Garbage & Waste', color: '#10b981' },
+  { value: 'garbage_bulk', label: 'Bulk Waste Removal', group: 'Garbage & Waste', color: '#10b981' },
+  { value: 'garbage_construction', label: 'Construction Debris', group: 'Garbage & Waste', color: '#10b981' },
+  { value: 'garbage_hazardous', label: 'Hazardous Waste', group: 'Garbage & Waste', color: '#10b981' },
+  { value: 'garbage_green', label: 'Green Waste', group: 'Garbage & Waste', color: '#10b981' },
+  // Water Leaks & Supply
+  { value: 'water_pipe_leak', label: 'Pipe Leak Repair', group: 'Water Leaks & Supply', color: '#3b82f6' },
+  { value: 'water_supply_restoration', label: 'Water Supply Restoration', group: 'Water Leaks & Supply', color: '#3b82f6' },
+  { value: 'water_valve_replacement', label: 'Valve Replacement', group: 'Water Leaks & Supply', color: '#3b82f6' },
+  { value: 'water_meter_issues', label: 'Water Meter Issues', group: 'Water Leaks & Supply', color: '#3b82f6' },
+  { value: 'water_borewell', label: 'Borewell Maintenance', group: 'Water Leaks & Supply', color: '#3b82f6' },
+  // Streetlight Failure
+  { value: 'light_bulb_replacement', label: 'Bulb Replacement', group: 'Streetlight Failure', color: '#f59e0b' },
+  { value: 'light_wiring_fault', label: 'Wiring Fault', group: 'Streetlight Failure', color: '#f59e0b' },
+  { value: 'light_pole_damage', label: 'Pole Damage', group: 'Streetlight Failure', color: '#f59e0b' },
+  { value: 'light_timer_fault', label: 'Timer/Sensor Fault', group: 'Streetlight Failure', color: '#f59e0b' },
+  { value: 'light_solar', label: 'Solar Light Maintenance', group: 'Streetlight Failure', color: '#f59e0b' },
+  // Drainage
+  { value: 'drain_blockage', label: 'Drain Blockage', group: 'Drainage', color: '#8b5cf6' },
+  { value: 'drain_stormwater', label: 'Stormwater Overflow', group: 'Drainage', color: '#8b5cf6' },
+  { value: 'drain_manhole', label: 'Manhole Cover', group: 'Drainage', color: '#8b5cf6' },
+  { value: 'drain_sewage_overflow', label: 'Sewage Overflow', group: 'Drainage', color: '#8b5cf6' },
+  { value: 'drain_pipe_repair', label: 'Drain Pipe Repair', group: 'Drainage', color: '#8b5cf6' },
+  // Electricity
+  { value: 'elec_power_outage', label: 'Power Outage', group: 'Electricity', color: '#ec4899' },
+  { value: 'elec_transformer', label: 'Transformer Fault', group: 'Electricity', color: '#ec4899' },
+  { value: 'elec_broken_wires', label: 'Broken Wires', group: 'Electricity', color: '#ec4899' },
+  { value: 'elec_meter', label: 'Electricity Meter', group: 'Electricity', color: '#ec4899' },
+  { value: 'elec_illegal', label: 'Illegal Connections', group: 'Electricity', color: '#ec4899' },
+  // Sanitation
+  { value: 'san_public_toilet', label: 'Public Toilet Maintenance', group: 'Sanitation', color: '#06b6d4' },
+  { value: 'san_open_defecation', label: 'Open Defecation Control', group: 'Sanitation', color: '#06b6d4' },
+  { value: 'san_sewage_treatment', label: 'Sewage Treatment', group: 'Sanitation', color: '#06b6d4' },
+  { value: 'san_solid_waste', label: 'Solid Waste Management', group: 'Sanitation', color: '#06b6d4' },
+  { value: 'san_street_sweeping', label: 'Street Sweeping', group: 'Sanitation', color: '#06b6d4' },
+  { value: 'san_dead_animal', label: 'Dead Animal Removal', group: 'Sanitation', color: '#06b6d4' },
+  { value: 'san_hospital_waste', label: 'Hospital Waste Disposal', group: 'Sanitation', color: '#06b6d4' },
+  { value: 'san_drain_cleaning', label: 'Drain Cleaning', group: 'Sanitation', color: '#06b6d4' },
+  { value: 'san_graffiti', label: 'Graffiti Removal', group: 'Sanitation', color: '#06b6d4' },
+  { value: 'san_toilet_block', label: 'Community Toilet Block Repair', group: 'Sanitation', color: '#06b6d4' },
+  // Utility Services
+  { value: 'util_gas_pipeline', label: 'Gas Pipeline Repair', group: 'Utility Services', color: '#f97316' },
+  { value: 'util_broadband', label: 'Internet / Broadband Infrastructure', group: 'Utility Services', color: '#f97316' },
+  { value: 'util_cable_tv', label: 'Cable TV Line Issues', group: 'Utility Services', color: '#f97316' },
+  { value: 'util_telephone_pole', label: 'Telephone Pole Maintenance', group: 'Utility Services', color: '#f97316' },
+  { value: 'util_public_wifi', label: 'Public WiFi Upkeep', group: 'Utility Services', color: '#f97316' },
+  { value: 'util_gas_meter', label: 'Gas Meter Issues', group: 'Utility Services', color: '#f97316' },
+  { value: 'util_water_network', label: 'Water Supply Network', group: 'Utility Services', color: '#f97316' },
+  { value: 'util_optical_fiber', label: 'Optical Fiber Laying', group: 'Utility Services', color: '#f97316' },
+  { value: 'util_junction_box', label: 'Junction Box Faults', group: 'Utility Services', color: '#f97316' },
+  { value: 'util_underground', label: 'Underground Utility Lines', group: 'Utility Services', color: '#f97316' },
 ];
+
+// Group categories by their group name for display
+const CATEGORY_GROUPS = [...new Set(REPORT_CATEGORIES.map(c => c.group))];
 
 const Departments = () => {
   const [departments, setDepartments] = useState([]);
@@ -72,7 +123,9 @@ const Departments = () => {
       const response = await axios.get(`${API_BASE_URL}/admin/departments`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setDepartments(response.data.data || []);
+      console.log('Departments Fetch Response:', response.data);
+      const departmentsData = response.data?.data || response.data || [];
+      setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
     } catch (error) {
       console.error('Error fetching departments:', error);
       setDepartments([]);
@@ -238,19 +291,82 @@ const Departments = () => {
                         {dept.description || '-'}
                       </Typography>
                     </TableCell>
-                    <TableCell>
-                      <Box display="flex" flexWrap="wrap" gap={0.5}>
-                        {dept.categories && dept.categories.length > 0 ? (
-                          dept.categories.slice(0, 3).map((cat) => (
-                            <Chip key={cat} label={cat} size="small" variant="outlined" />
-                          ))
-                        ) : (
-                          <Typography variant="body2" color="text.secondary">
-                            None
-                          </Typography>
-                        )}
-                        {dept.categories && dept.categories.length > 3 && (
-                          <Chip label={`+${dept.categories.length - 3}`} size="small" />
+                    <TableCell sx={{ maxWidth: 320 }}>
+                      <Box display="flex" flexDirection="column" gap={1}>
+                        {dept.categories && dept.categories.length > 0 ? (() => {
+                          const groups = {};
+                          const unmatched = [];
+
+                          dept.categories.forEach(val => {
+                            const cat = REPORT_CATEGORIES.find(c => c.value === val);
+                            if (cat) {
+                              if (!groups[cat.group]) groups[cat.group] = { color: cat.color, items: [] };
+                              groups[cat.group].items.push(cat.label);
+                            } else {
+                              unmatched.push(val);
+                            }
+                          });
+
+                          return (
+                            <>
+                              {Object.entries(groups).map(([grp, { color, items }]) => (
+                                <Box key={grp}>
+                                  {/* ── Parent Category ── Bold filled chip */}
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: color, flexShrink: 0 }} />
+                                    <Typography
+                                      variant="caption"
+                                      sx={{ fontWeight: 800, color: color, fontSize: '0.72rem', letterSpacing: 0.3 }}
+                                    >
+                                      {grp}
+                                    </Typography>
+                                    <Chip
+                                      label={items.length}
+                                      size="small"
+                                      sx={{
+                                        height: 16,
+                                        fontSize: '0.6rem',
+                                        fontWeight: 700,
+                                        bgcolor: color,
+                                        color: '#fff',
+                                        '& .MuiChip-label': { px: 0.8 }
+                                      }}
+                                    />
+                                  </Box>
+                                  {/* ── Subcategories ── Light outlined chips, indented */}
+                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.4, pl: 2 }}>
+                                    {items.map(item => (
+                                      <Chip
+                                        key={item}
+                                        label={item}
+                                        size="small"
+                                        variant="outlined"
+                                        sx={{
+                                          fontSize: '0.62rem',
+                                          height: 20,
+                                          color: color,
+                                          bgcolor: `${color}0d`,
+                                          borderColor: `${color}40`,
+                                          '&:hover': { bgcolor: `${color}20` }
+                                        }}
+                                      />
+                                    ))}
+                                  </Box>
+                                </Box>
+                              ))}
+                              {/* ── Legacy/unmatched values ── */}
+                              {unmatched.length > 0 && (
+                                <Box display="flex" flexWrap="wrap" gap={0.4}>
+                                  {unmatched.map(val => (
+                                    <Chip key={val} label={val} size="small" variant="outlined"
+                                      sx={{ fontSize: '0.7rem' }} />
+                                  ))}
+                                </Box>
+                              )}
+                            </>
+                          );
+                        })() : (
+                          <Typography variant="body2" color="text.secondary">None</Typography>
                         )}
                       </Box>
                     </TableCell>
@@ -331,25 +447,41 @@ const Departments = () => {
             rows={2}
           />
           <FormControl fullWidth margin="normal">
-            <InputLabel>Assigned Categories</InputLabel>
+            <InputLabel>Assigned Categories & Subcategories</InputLabel>
             <Select
               multiple
               value={formData.categories}
               onChange={(e) => handleFormChange('categories', e.target.value)}
-              input={<OutlinedInput label="Assigned Categories" />}
+              input={<OutlinedInput label="Assigned Categories & Subcategories" />}
               renderValue={(selected) => (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {selected.map((value) => (
-                    <Chip key={value} label={value} size="small" />
-                  ))}
+                  {selected.map((value) => {
+                    const cat = REPORT_CATEGORIES.find(c => c.value === value);
+                    return (
+                      <Chip
+                        key={value}
+                        label={cat ? cat.label : value}
+                        size="small"
+                        sx={cat ? { bgcolor: `${cat.color}18`, color: cat.color, border: `1px solid ${cat.color}44` } : {}}
+                      />
+                    );
+                  })}
                 </Box>
               )}
             >
-              {REPORT_CATEGORIES.map((category) => (
-                <MenuItem key={category.value} value={category.value}>
-                  {category.label}
-                </MenuItem>
-              ))}
+              {CATEGORY_GROUPS.map((group) => [
+                <MenuItem key={`header-${group}`} disabled sx={{ fontWeight: 800, opacity: '1 !important', fontSize: '0.75rem', color: REPORT_CATEGORIES.find(c => c.group === group)?.color, pt: 1.5, pb: 0.5 }}>
+                  ── {group.toUpperCase()} ──
+                </MenuItem>,
+                ...REPORT_CATEGORIES.filter(c => c.group === group).map((category) => (
+                  <MenuItem key={category.value} value={category.value} sx={{ pl: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: category.color, flexShrink: 0 }} />
+                      {category.label}
+                    </Box>
+                  </MenuItem>
+                ))
+              ])}
             </Select>
           </FormControl>
           <TextField

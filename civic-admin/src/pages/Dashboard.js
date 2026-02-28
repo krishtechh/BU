@@ -60,13 +60,17 @@ const Dashboard = () => {
 
       console.log("Dashboard API Response:", response.data);
 
-      // Supports both:
-      // { data: { stats, recentReports } }
-      // OR { stats, recentReports }
+      // Supports both: { data: { stats, recentReports } } OR { stats, recentReports }
       const apiData = response.data?.data || response.data;
 
-      setStats(apiData?.stats || defaultStats);
-      setRecentReports(apiData?.recentReports || []);
+      if (apiData) {
+        const { stats: newStats, recentReports: newReports } = apiData;
+        setStats(prevStats => ({
+          ...prevStats,
+          ...(newStats || {})
+        }));
+        setRecentReports(newReports || []);
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setStats(defaultStats);
@@ -79,37 +83,37 @@ const Dashboard = () => {
   const statCards = [
     {
       title: 'Total Reports',
-      value: stats.totalReports || 0,
+      value: stats?.totalReports || 0,
       icon: <Report fontSize="large" />,
       color: '#2196F3'
     },
     {
       title: "Today's Reports",
-      value: stats.todayReports || 0,
+      value: stats?.todayReports || 0,
       icon: <TrendingUp fontSize="large" />,
       color: '#4CAF50'
     },
     {
       title: 'Pending Reports',
-      value: stats.pendingReports || 0,
+      value: stats?.pendingReports || 0,
       icon: <Pending fontSize="large" />,
       color: '#FF9800'
     },
     {
       title: 'Resolved Reports',
-      value: stats.resolvedReports || 0,
+      value: stats?.resolvedReports || 0,
       icon: <CheckCircle fontSize="large" />,
       color: '#4CAF50'
     },
     {
       title: 'Total Users',
-      value: stats.totalUsers || 0,
+      value: stats?.totalUsers || 0,
       icon: <People fontSize="large" />,
       color: '#9C27B0'
     },
     {
       title: 'Active Staff',
-      value: stats.activeStaff || 0,
+      value: stats?.activeStaff || 0,
       icon: <People fontSize="large" />,
       color: '#00BCD4'
     }
@@ -170,7 +174,7 @@ const Dashboard = () => {
                   recentReports.map((report) => (
                     <TableRow key={report.id}>
                       <TableCell>{report.title}</TableCell>
-                      <TableCell>{report.reporterId?.name || 'Anonymous'}</TableCell>
+                      <TableCell>{report.reporter?.name || report.reporterId?.name || 'Anonymous'}</TableCell>
                       <TableCell>{report.category}</TableCell>
                       <TableCell>
                         <Chip

@@ -48,22 +48,21 @@ exports.createReport = async (req, res) => {
     }
 
     let reporterId;
+
     if (req.user && req.user.id) {
       reporterId = req.user.id;
     } else {
-      // Handle WhatsApp/Public Guest reports
       const whatsappUser = await prisma.user.findFirst({
         where: { email: 'whatsapp-bot@civicsetu.com' }
       });
 
       if (!whatsappUser) {
-        // Create a default bot user if it doesn't exist
         const newUser = await prisma.user.create({
           data: {
             name: 'WhatsApp Bot',
             email: 'whatsapp-bot@civicsetu.com',
             phone: '0000000000',
-            password: 'guest_password_not_used', // Placeholder
+            password: 'guest_password_not_used',
             role: 'citizen',
             isActive: true
           }
@@ -73,6 +72,20 @@ exports.createReport = async (req, res) => {
         reporterId = whatsappUser.id;
       }
     }
+
+    // Auto-route department
+    let autoAssignedDept = null;
+    try {
+      const matchingDept = await prisma.department.findFirst({
+        where: {
+          isDeleted: false,
+          isActive: true,
+          categories: { has: category }
+        },
+        select: { name: true }
+      });
+      autoAssignedDept = matchingDept?.name || null;
+    } catch (_) { }
 
     const report = await prisma.report.create({
       data: {
@@ -89,10 +102,11 @@ exports.createReport = async (req, res) => {
         longitude: location.longitude ? parseFloat(location.longitude) : 0,
         priority: priority || 'medium',
         isAnonymous: isAnonymous === 'true' || isAnonymous === true,
+        department: autoAssignedDept,
         statusHistory: {
           create: {
             status: 'submitted',
-            changedById: req.user.id,
+            changedById: reporterId,
             comment: 'Report submitted'
           }
         }
@@ -130,12 +144,11 @@ exports.createReport = async (req, res) => {
                 fileName: file.originalname,
                 fileSize: file.size,
                 mimeType: file.mimetype,
-                uploadedById: req.user.id
+                uploadedById: reporterId
               }
             });
           } catch (uploadError) {
             console.error('Individual file upload failed:', uploadError);
-            // Don't throw, just log so other files can proceed and report is still created
             return null;
           }
         });
@@ -159,22 +172,12 @@ exports.createReport = async (req, res) => {
       message: 'Report created successfully',
       data: finalReport
     });
+
   } catch (error) {
-    console.error('Create report error details:', {
-      message: error.message || 'No specific message',
-      name: error.name,
-      code: error.code,
-      stack: error.stack,
-      raw: error // This will show more details in many consoles
-    });
-
-    // Log the full error object as a string too, just in case
-    console.error('Full Error String:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-
+    console.error('Create report error:', error);
     res.status(500).json({
       success: false,
-      message: `Error creating report: ${error.message || 'Unknown server error'}`,
-      error: error.message || error
+      message: error.message
     });
   }
 };

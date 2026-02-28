@@ -1,15 +1,14 @@
 const prisma = require('../config/db');
 
 exports.getAllUsers = async (req, res) => {
+  console.log('GET /api/users - Fetching all users', { query: req.query, user: req.user?.email });
   try {
-    const { page = 1, limit = 10, role, isActive } = req.query;
+    const { page = 1, limit = 100, role, isActive } = req.query;
 
     const where = { isDeleted: false };
-    
+
     if (role) where.role = role;
     if (isActive !== undefined) where.isActive = isActive === 'true';
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const users = await prisma.user.findMany({
       where,
@@ -24,20 +23,26 @@ exports.getAllUsers = async (req, res) => {
         createdAt: true
       },
       orderBy: { createdAt: 'desc' },
-      take: parseInt(limit),
-      skip: skip
+      take: limit === 'all' ? undefined : parseInt(limit),
+      skip: limit === 'all' ? 0 : (parseInt(page) - 1) * parseInt(limit)
     });
 
     const total = await prisma.user.count({ where });
 
+    // Ensure frontend compatibility by mapping departmentName to department
+    const formattedUsers = users.map(u => ({
+      ...u,
+      department: u.departmentName
+    }));
+
     res.status(200).json({
       success: true,
-      data: users,
+      data: formattedUsers,
       pagination: {
         page: parseInt(page),
-        limit: parseInt(limit),
+        limit: limit === 'all' ? total : parseInt(limit),
         total,
-        pages: Math.ceil(total / parseInt(limit))
+        pages: limit === 'all' ? 1 : Math.ceil(total / parseInt(limit))
       }
     });
   } catch (error) {
