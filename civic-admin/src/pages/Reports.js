@@ -33,7 +33,7 @@ import axios from 'axios';
 import { getStatusColor, getStatusLabel } from '../constants/reportStatus';
 import MapView from '../components/MapView';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://bu-backend-t0vl.onrender.com/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
 
 const Reports = () => {
   const [reports, setReports] = useState([]);

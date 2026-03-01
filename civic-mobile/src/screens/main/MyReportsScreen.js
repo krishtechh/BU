@@ -16,7 +16,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { getStatusColor, getStatusLabel } from '../../constants/reportStatus';
 import reportService from '../../services/reportService';
+import chatService from '../../services/chatService';
 import { showErrorAlert } from '../../utils/errorHandler';
+
 
 const MyReportsScreen = ({ navigation }) => {
   const { theme, isDarkMode } = useTheme();
@@ -25,7 +27,9 @@ const MyReportsScreen = ({ navigation }) => {
   const [filteredReports, setFilteredReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
   const [error, setError] = useState(null);
+
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -48,8 +52,11 @@ const MyReportsScreen = ({ navigation }) => {
           description: report.description,
           media: report.media || [],
           upvotes: Array.isArray(report.upvotes) ? report.upvotes.length : 0,
-          comments: Array.isArray(report.comments) ? report.comments.length : 0
+          comments: Array.isArray(report.comments) ? report.comments.length : 0,
+          assignedTo: report.assignedTo,
+          departmentHead: report.departmentHead
         }));
+
 
         setReports(transformedReports);
         setFilteredReports(transformedReports);
@@ -67,8 +74,8 @@ const MyReportsScreen = ({ navigation }) => {
       const errorMessage = error?.message?.includes('Network Error')
         ? 'No internet connection. Please check your network and try again.'
         : error?.response?.status === 401
-        ? 'Your session has expired. Please log in again.'
-        : 'Failed to load reports. Please try again.';
+          ? 'Your session has expired. Please log in again.'
+          : 'Failed to load reports. Please try again.';
       setError(errorMessage);
       setReports([]);
       setFilteredReports([]);
@@ -116,6 +123,34 @@ const MyReportsScreen = ({ navigation }) => {
     return iconMap[category] || 'help-circle';
   };
 
+  const handleDirectChat = async (report) => {
+    const otherUserId = report.assignedTo?.id || report.departmentHead?.id;
+
+    if (!otherUserId) {
+      showErrorAlert(new Error('No department staff or head assigned yet.'));
+      return;
+    }
+
+    try {
+      setChatLoading(true);
+      const result = await chatService.createChat(otherUserId);
+
+      if (result.success) {
+        navigation.navigate('Chat', {
+          chatId: result.data.chatId,
+          otherUser: report.assignedTo || report.departmentHead
+        });
+      } else {
+        showErrorAlert(new Error(result.message || 'Failed to start chat'));
+      }
+    } catch (error) {
+      showErrorAlert(error, 'Chat Error');
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+
   const renderReportItem = ({ item }) => (
     <TouchableOpacity
       style={[styles.reportItem, { backgroundColor: theme.colors.surface.primary }]}
@@ -140,12 +175,23 @@ const MyReportsScreen = ({ navigation }) => {
       </View>
       <View style={[styles.reportFooter, { borderTopColor: theme.colors.border.primary }]}>
         <Text style={[styles.reportDate, { color: theme.colors.text.secondary }]}>Created: {item.createdAt}</Text>
-        <MaterialCommunityIcons
-          name="chevron-right"
-          size={20}
-          color={theme.colors.text.secondary}
-        />
+        <View style={styles.footerActions}>
+          {(item.assignedTo || item.departmentHead) && (
+            <TouchableOpacity
+              style={[styles.chatIconButton, { backgroundColor: theme.colors.primary.main + '15' }]}
+              onPress={() => handleDirectChat(item)}
+            >
+              <MaterialCommunityIcons name="chat-outline" size={18} color={theme.colors.primary.main} />
+            </TouchableOpacity>
+          )}
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={20}
+            color={theme.colors.text.secondary}
+          />
+        </View>
       </View>
+
     </TouchableOpacity>
   );
 
@@ -394,6 +440,16 @@ const styles = StyleSheet.create({
   reportDate: {
     fontSize: 12,
   },
+  footerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  chatIconButton: {
+    padding: 6,
+    borderRadius: 8,
+  },
+
   emptyContainer: {
     flex: 1,
   },

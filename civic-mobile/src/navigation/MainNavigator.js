@@ -14,6 +14,11 @@ import ReportDetailScreen from '../screens/main/ReportDetailScreen';
 import EditProfileScreen from '../screens/main/EditProfileScreen';
 import NotificationSettingsScreen from '../screens/main/NotificationSettingsScreen';
 import LanguageSelectionScreen from '../screens/main/LanguageSelectionScreen';
+import ChatScreen from '../screens/main/ChatScreen';
+import MessagesScreen from '../screens/main/MessagesScreen';
+import RewardsScreen from '../screens/main/RewardsScreen';
+
+
 
 // Staff screens
 import DashboardScreen from '../screens/staff/DashboardScreen';
@@ -97,13 +102,17 @@ const CitizenTabNavigator = () => {
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'CreateReport') {
-            iconName = 'plus-circle';
           } else if (route.name === 'MyReports') {
             iconName = focused ? 'file-document' : 'file-document-outline';
+          } else if (route.name === 'Rewards') {
+            iconName = focused ? 'wallet' : 'wallet-outline';
+          } else if (route.name === 'Messages') {
+            iconName = focused ? 'message' : 'message-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'account' : 'account-outline';
           }
+
+
 
           return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
         },
@@ -117,9 +126,12 @@ const CitizenTabNavigator = () => {
       })}
     >
       <Tab.Screen name="Home" component={HomeStack} />
-      <Tab.Screen name="CreateReport" component={CreateReportScreen} options={{ title: 'Report Issue' }} />
+      <Tab.Screen name="Rewards" component={RewardsScreen} options={{ title: 'Rewards' }} />
+      <Tab.Screen name="Messages" component={MessagesScreen} options={{ title: 'Messages' }} />
       <Tab.Screen name="MyReports" component={MyReportsStack} options={{ title: 'My Reports' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
+
+
     </Tab.Navigator>
   );
 };
@@ -173,6 +185,13 @@ const MainNavigator = () => {
         options={{
           headerShown: false,
           presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={{
+          headerShown: false,
         }}
       />
     </Stack.Navigator>

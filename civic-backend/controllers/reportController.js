@@ -268,16 +268,17 @@ exports.getReportById = async (req, res) => {
       data: { viewCount: { increment: 1 } },
       include: {
         reporter: {
-          select: { id: true, name: true, email: true, phone: true }
+          select: { id: true, name: true, email: true, phone: true, profilePicture: true }
         },
         assignedTo: {
-          select: { id: true, name: true, email: true, departmentName: true }
+          select: { id: true, name: true, email: true, departmentName: true, profilePicture: true }
         },
         media: true,
         comments: {
           include: {
-            user: { select: { id: true, name: true, role: true } }
-          }
+            user: { select: { id: true, name: true, role: true, profilePicture: true } }
+          },
+          orderBy: { createdAt: 'asc' }
         },
         statusHistory: {
           include: {
@@ -298,9 +299,23 @@ exports.getReportById = async (req, res) => {
       });
     }
 
+    // Include department head if report is not assigned
+    let departmentHead = null;
+    if (!report.assignedToId && report.department) {
+      const dept = await prisma.department.findUnique({
+        where: { name: report.department },
+        include: {
+          headOfDepartment: {
+            select: { id: true, name: true, profilePicture: true }
+          }
+        }
+      });
+      departmentHead = dept?.headOfDepartment;
+    }
+
     res.status(200).json({
       success: true,
-      data: report
+      data: { ...report, departmentHead }
     });
   } catch (error) {
     console.error('Get report by id error:', error);
@@ -330,7 +345,7 @@ exports.getMyReports = async (req, res) => {
       include: {
         media: true,
         assignedTo: {
-          select: { id: true, name: true, departmentName: true }
+          select: { id: true, name: true, departmentName: true, profilePicture: true }
         }
       },
       orderBy: { createdAt: 'desc' },
@@ -338,11 +353,28 @@ exports.getMyReports = async (req, res) => {
       skip: skip
     });
 
+    // Add department head for each report if not assigned
+    const reportsWithDeptHead = await Promise.all(reports.map(async (report) => {
+      let departmentHead = null;
+      if (!report.assignedToId && report.department) {
+        const dept = await prisma.department.findUnique({
+          where: { name: report.department },
+          include: {
+            headOfDepartment: {
+              select: { id: true, name: true, profilePicture: true }
+            }
+          }
+        });
+        departmentHead = dept?.headOfDepartment;
+      }
+      return { ...report, departmentHead };
+    }));
+
     const total = await prisma.report.count({ where });
 
     res.status(200).json({
       success: true,
-      data: reports,
+      data: reportsWithDeptHead,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),

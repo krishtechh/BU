@@ -13,13 +13,17 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { REPORT_STATUS, PRIORITY_LEVELS } from '../../constants/config';
 import reportService from '../../services/reportService';
+import chatService from '../../services/chatService';
 import { showErrorAlert } from '../../utils/errorHandler';
+
 
 const ReportDetailScreen = ({ route, navigation }) => {
   const { theme } = useTheme();
   const { reportId } = route.params;
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [chatLoading, setChatLoading] = useState(false);
+
 
   useEffect(() => {
     fetchReportDetails();
@@ -29,10 +33,10 @@ const ReportDetailScreen = ({ route, navigation }) => {
     try {
       console.log('📋 Fetching report details for ID:', reportId);
       const result = await reportService.getReportById(reportId);
-      
+
       if (result.success) {
         const reportData = result.data;
-        
+
         // Transform the data to match our UI expectations
         const transformedReport = {
           id: reportData.id,
@@ -55,9 +59,13 @@ const ReportDetailScreen = ({ route, navigation }) => {
             typeof media === 'string' ? media : media?.url
           ).filter(Boolean),
           comments: reportData.comments || [],
-          upvotes: Array.isArray(reportData.upvotes) ? reportData.upvotes.length : 0
+          upvotes: Array.isArray(reportData.upvotes) ? reportData.upvotes.length : 0,
+          department: reportData.department,
+          departmentHead: reportData.departmentHead,
+          assignedToId: reportData.assignedToId
         };
-        
+
+
         console.log('✅ Report details loaded:', transformedReport);
         setReport(transformedReport);
       } else {
@@ -107,6 +115,37 @@ const ReportDetailScreen = ({ route, navigation }) => {
       minute: '2-digit'
     });
   };
+
+  const handleChatWithDepartment = async () => {
+    if (!report) return;
+
+    // Determine who to chat with
+    const otherUserId = report.assignedToId || report.departmentHead?.id;
+
+    if (!otherUserId) {
+      showErrorAlert(new Error('No department staff or head assigned to this report yet.'));
+      return;
+    }
+
+    try {
+      setChatLoading(true);
+      const result = await chatService.createChat(otherUserId);
+
+      if (result.success) {
+        navigation.navigate('Chat', {
+          chatId: result.data.chatId,
+          otherUser: report.assignedTo || report.departmentHead
+        });
+      } else {
+        showErrorAlert(new Error(result.message || 'Failed to start chat'));
+      }
+    } catch (error) {
+      showErrorAlert(error, 'Chat Error');
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
 
   if (loading) {
     return (
@@ -257,7 +296,30 @@ const ReportDetailScreen = ({ route, navigation }) => {
           ))}
         </View>
       )}
+
+      {/* Chat Button */}
+      <View style={styles.actionSection}>
+        <TouchableOpacity
+          style={[
+            styles.chatButton,
+            { backgroundColor: theme.colors.primary.main },
+            (!report.assignedToId && !report.departmentHead) && styles.disabledButton
+          ]}
+          onPress={handleChatWithDepartment}
+          disabled={chatLoading || (!report.assignedToId && !report.departmentHead)}
+        >
+          {chatLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <MaterialCommunityIcons name="chat" size={24} color="#fff" style={styles.buttonIcon} />
+              <Text style={styles.chatButtonText}>Chat with Department</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
     </ScrollView>
+
   );
 };
 
@@ -378,6 +440,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  actionSection: {
+    padding: 20,
+    marginBottom: 40,
+  },
+  chatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  chatButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
 });
+
 
 export default ReportDetailScreen;

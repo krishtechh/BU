@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -35,11 +36,11 @@ model User {
   updatedAt           DateTime              @updatedAt
   createdById         String?
   updatedById         String?
-  chatParticipants    ChatParticipant[]
+  ChatParticipant     ChatParticipant[]
   comments            Comment[]
   headingDepartment   Department?           @relation("DeptHead")
   mediaUploaded       Media[]
-  sentMessages        Message[]
+  Message             Message[]
   managedReports      Report[]              @relation("Assigner")
   assignedReports     Report[]              @relation("Assignee")
   createdReports      Report[]              @relation("Reporter")
@@ -170,17 +171,17 @@ model Upvote {
 model Chat {
   id              String            @id @default(uuid())
   createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  participants    ChatParticipant[]
-  messages        Message[]
+  updatedAt       DateTime
+  ChatParticipant ChatParticipant[]
+  Message         Message[]
 }
 
 model ChatParticipant {
   id     String @id @default(uuid())
   chatId String
   userId String
-  chat   Chat   @relation(fields: [chatId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
+  Chat   Chat   @relation(fields: [chatId], references: [id])
+  User   User   @relation(fields: [userId], references: [id])
 
   @@unique([chatId, userId])
 }
@@ -192,8 +193,8 @@ model Message {
   content   String
   isSeen    Boolean  @default(false)
   createdAt DateTime @default(now())
-  chat      Chat     @relation(fields: [chatId], references: [id])
-  sender    User     @relation(fields: [senderId], references: [id])
+  Chat      Chat     @relation(fields: [chatId], references: [id])
+  User      User     @relation(fields: [senderId], references: [id])
 }
 
 enum Role {
