@@ -21,11 +21,19 @@ app.use(cors({
     process.env.CLIENT_URL,
     process.env.ADMIN_URL,
     process.env.MOBILE_URL,
+    'https://witless-gregg-acaulescent.ngrok-free.dev',
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:8081',
     'http://localhost:8082',
-    'http://localhost:8086'
+    'http://localhost:8086',
+    'http://localhost:8086',
+    'http://10.55.135.30:3000',
+    'http://10.55.135.30:3001',
+    'http://10.55.135.30:5000',
+    'http://10.55.135.30:8081',
+    'http://192.168.1.11:3001',
+    'http://192.168.1.11:5000'
   ],
   credentials: true
 }));
@@ -52,6 +60,18 @@ app.use('/api/whatsapp', require('./whatsapp/whatsapp.routes'));
 app.use('/api/chat', require('./routes/chat'));
 
 /* -------------------- HEALTH CHECK -------------------- */
+// Routes - Note: These currently use Mongoose controllers and will need updating
+const authRoutes = require('./routes/auth');
+const reportRoutes = require('./routes/reports');
+const userRoutes = require('./routes/users');
+const adminRoutes = require('./routes/admin');
+const ivrRoutes = require('./routes/ivr');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/ivr', ivrRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({

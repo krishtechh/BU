@@ -31,7 +31,7 @@ exports.register = async (req, res) => {
 
     const verificationToken = crypto.randomBytes(20).toString('hex');
     
-    // Hash password (Mongoose did this in pre-save)
+    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -58,7 +58,6 @@ exports.register = async (req, res) => {
     const token = generateToken(user.id, user.role, user.departmentName);
     const refreshToken = generateRefreshToken(user.id, user.role, user.departmentName);
 
-    // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
 
     res.status(201).json({
@@ -82,8 +81,11 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
+    console.log(`Login attempt for: ${req.body.emailOrPhone}`);
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         errors: errors.array()
@@ -102,13 +104,17 @@ exports.login = async (req, res) => {
     });
 
     if (!user) {
+      console.log(`User not found: ${emailOrPhone}`);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       });
     }
 
+    console.log(`User found: ${user.email}, Role: ${user.role}`);
+
     const isPasswordMatch = await bcrypt.compare(password, user.password);
+    console.log(`Password match result: ${isPasswordMatch}`);
 
     if (!isPasswordMatch) {
       return res.status(401).json({
@@ -118,6 +124,7 @@ exports.login = async (req, res) => {
     }
 
     if (!user.isActive) {
+      console.log(`User account deactivated: ${user.email}`);
       return res.status(401).json({
         success: false,
         message: 'Account is deactivated. Please contact support.'
@@ -127,9 +134,9 @@ exports.login = async (req, res) => {
     const token = generateToken(user.id, user.role, user.departmentName);
     const refreshToken = generateRefreshToken(user.id, user.role, user.departmentName);
 
-    // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
 
+    console.log(`Login successful for: ${user.email}`);
     res.status(200).json({
       success: true,
       message: 'Login successful',

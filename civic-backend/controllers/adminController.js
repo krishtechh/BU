@@ -88,25 +88,9 @@ exports.getDashboardStats = async (req, res) => {
 
 exports.getReportAnalytics = async (req, res) => {
   try {
-    const { timeRange } = req.query;
-    const where = { isDeleted: false };
-
-    if (timeRange && timeRange !== "all") {
-      const days = parseInt(timeRange);
-      const date = new Date();
-      date.setDate(date.getDate() - days);
-      where.createdAt = { gte: date };
-    }
-
     const categoryStats = await prisma.report.groupBy({
       by: ['category'],
-      where,
-      _count: { _all: true }
-    });
-
-    const timeline = await prisma.report.groupBy({
-      by: ['createdAt'],
-      where,
+      where: { isDeleted: false },
       _count: { _all: true }
     });
 
@@ -114,12 +98,8 @@ exports.getReportAnalytics = async (req, res) => {
       success: true,
       data: {
         categories: categoryStats.map(c => ({
-          id: c.category || "Unknown",
+          _id: c.category || "Unknown",
           count: c._count._all
-        })),
-        timeline: timeline.map(t => ({
-          _id: t.createdAt,
-          total: t._count._all
         }))
       }
     });
@@ -135,57 +115,18 @@ exports.getReportAnalytics = async (req, res) => {
 
 exports.getUserAnalytics = async (req, res) => {
   try {
-    const { timeRange } = req.query;
-    const where = { isDeleted: false };
-
-    const registrationTrend = await prisma.user.groupBy({
-      by: ['createdAt'],
-      where,
+    const roleStats = await prisma.user.groupBy({
+      by: ['role'],
+      where: { isDeleted: false },
       _count: { _all: true }
     });
-
-    const topReporters = await prisma.report.groupBy({
-      by: ['reporterId'],
-      where: { isDeleted: false },
-      _count: { reporterId: true },
-      orderBy: { _count: { reporterId: "desc" } },
-      take: 10
-    });
-
-    const reporterIds = topReporters.map(r => r.reporterId);
-
-    const reporters = await prisma.user.findMany({
-      where: { id: { in: reporterIds } },
-      select: { id: true, name: true }
-    });
-
-    const reporterMap = Object.fromEntries(
-      reporters.map(r => [r.id, r.name])
-    );
-
-    // Detailed user stats by role
-    const userStats = await Promise.all(
-      ['admin', 'supervisor', 'staff', 'citizen'].map(async (role) => {
-        const [count, active, verified] = await Promise.all([
-          prisma.user.count({ where: { role, isDeleted: false } }),
-          prisma.user.count({ where: { role, isDeleted: false, isActive: true } }),
-          prisma.user.count({ where: { role, isDeleted: false, isVerified: true } })
-        ]);
-        return { id: role, count, active, verified };
-      })
-    );
 
     res.status(200).json({
       success: true,
       data: {
-        userStats,
-        registrationTrend: registrationTrend.map(r => ({
-          _id: r.createdAt,
+        userStats: roleStats.map(r => ({
+          role: r.role,
           count: r._count._all
-        })),
-        topReporters: topReporters.map(r => ({
-          name: reporterMap[r.reporterId] || "Unknown",
-          reportCount: r._count.reporterId
         }))
       }
     });
@@ -223,13 +164,9 @@ exports.getPerformanceMetrics = async (req, res) => {
 /* ================= DEPARTMENTS ================= */
 
 exports.getDepartments = async (req, res) => {
-  console.log('GET /api/admin/departments - Fetching departments');
   try {
     const departments = await prisma.department.findMany({
-      where: { isDeleted: false },
-      include: {
-        headOfDepartment: { select: { id: true, name: true } }
-      }
+      where: { isDeleted: false }
     });
 
     res.status(200).json({ success: true, data: departments });
@@ -239,7 +176,6 @@ exports.getDepartments = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 
 exports.createDepartment = async (req, res) => {
   try {
@@ -258,7 +194,6 @@ exports.createDepartment = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 
 exports.updateDepartment = async (req, res) => {
   try {
@@ -279,7 +214,6 @@ exports.updateDepartment = async (req, res) => {
   }
 };
 
-
 exports.deleteDepartment = async (req, res) => {
   try {
     await prisma.department.update({
@@ -299,33 +233,11 @@ exports.deleteDepartment = async (req, res) => {
 };
 
 
-exports.getDepartmentUsers = async (req, res) => {
-  try {
-    const users = await prisma.user.findMany({
-      where: {
-        departmentName: req.params.deptName,
-        isDeleted: false
-      },
-      select: { id: true, name: true, role: true, email: true }
-    });
+/* ================= STAFF ================= */
 
-    res.status(200).json({ success: true, data: users });
-
-  } catch (error) {
-    console.error("Get department users error:", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
 exports.assignAreaToStaff = async (req, res) => {
   try {
     const { userId, area } = req.body;
-
-    if (!userId || !area) {
-      return res.status(400).json({
-        success: false,
-        message: "userId and area are required"
-      });
-    }
 
     const user = await prisma.user.update({
       where: { id: userId },
@@ -340,31 +252,21 @@ exports.assignAreaToStaff = async (req, res) => {
 
   } catch (error) {
     console.error("Assign area error:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
+
 exports.createStaffUser = async (req, res) => {
   try {
-    const { name, email, password, departmentName, department } = req.body;
-    const finalDeptName = departmentName || department;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, email and password are required"
-      });
-    }
+    const { name, email, password, departmentName } = req.body;
 
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        password, // make sure you're hashing in real app
+        password,
         role: "staff",
-        departmentName: finalDeptName,
+        departmentName,
         isActive: true
       }
     });
@@ -377,9 +279,6 @@ exports.createStaffUser = async (req, res) => {
 
   } catch (error) {
     console.error("Create staff error:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
