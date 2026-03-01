@@ -28,7 +28,7 @@ import axios from 'axios';
 import { getStatusColor, getStatusLabel } from '../constants/reportStatus';
 import AnimatedCard from '../components/AnimatedCard';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://bu-backend-t0vl.onrender.com/api';
 
 const defaultStats = {
   totalReports: 0,
