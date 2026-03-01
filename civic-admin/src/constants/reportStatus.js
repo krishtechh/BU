@@ -1,4 +1,3 @@
-// Centralized report status configuration to ensure consistency across admin components
 export const REPORT_STATUS_CONFIG = {
   submitted: {
     label: 'Submitted',
